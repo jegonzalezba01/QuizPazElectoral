@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz del aplicatio</title>
+  <style>
+    /* ─── RESET & BASE ─── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --azul:     #1B355E;
+      --azul2:    #2a4a7a;
+      --azul3:    #14273f;
+      --amarillo: #FFE701;
+      --rojo:     #E03030;
+      --verde:    #2EAE6E;
+      --gris:     #F0F2F5;
+      --blanco:   #FFFFFF;
+      --sombra:   0 8px 32px rgba(27,53,94,.18);
+      --radio:    16px;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--gris);
+      color: var(--azul);
+    }
+
+    /* ─── PANTALLA / TRANSICIONES ─── */
+    .screen { display: none; animation: fadeUp .45s ease both; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px 16px 48px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── CONTENEDOR CENTRAL ─── */
+    .card {
+      background: var(--blanco);
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      width: 100%;
+      max-width: 620px;
+      overflow: hidden;
+    }
+
+    /* ─── HEADER SPLASH (pantalla inicio) ─── */
+    .splash {
+      background: var(--amarillo);
+      width: 100%;
+      max-width: 620px;
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      padding: 40px 32px 36px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .splash img { width: min(280px, 80%); height: auto; }
+    .splash h1 { font-size: clamp(1.25rem, 4vw, 1.7rem); font-weight: 700; color: var(--azul3); }
+    .splash p  { font-size: .95rem; color: var(--azul); max-width: 420px; line-height: 1.5; }
+
+    /* ─── BOTÓN PRINCIPAL ─── */
+    .btn-main {
+      background: var(--azul);
+      color: var(--blanco);
+      border: none;
+      border-radius: 50px;
+      padding: 14px 44px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      letter-spacing: .03em;
+    }
+    .btn-main:hover { background: var(--azul2); transform: translateY(-2px); }
+    .btn-main:active { transform: translateY(0); }
+
+    /* ─── MÓDULO HEADER (dentro de card) ─── */
+    .card-header {
+      background: var(--azul);
+      padding: 18px 24px 14px;
+      color: var(--blanco);
+    }
+    .card-header .tipo {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      opacity: .65;
+      margin-bottom: 4px;
+    }
+    .card-header h2 { font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+
+    /* ─── BARRA DE PROGRESO ─── */
+    .progress-bar-wrap {
+      background: var(--azul3);
+      height: 4px;
+    }
+    .progress-bar {
+      height: 4px;
+      background: var(--amarillo);
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─── CUERPO DE CARD ─── */
+    .card-body { padding: 28px 24px 28px; }
+
+    /* ─── PREGUNTA TEXT ─── */
+    .pregunta { font-size: 1.05rem; font-weight: 600; line-height: 1.55; color: var(--azul); margin-bottom: 22px; }
+
+    /* ─── OPCIONES QUIZ ─── */
+    .opciones { display: flex; flex-direction: column; gap: 10px; }
+    .opcion {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 16px;
+      border: 2px solid #dde1e7;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color .18s, background .18s, transform .1s;
+      font-size: .95rem;
+      line-height: 1.45;
+      background: var(--blanco);
+      user-select: none;
+    }
+    .opcion:hover { border-color: var(--azul); background: #eef1f7; }
+    .opcion .letra {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--gris);
+      border: 2px solid #c0c7d0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .8rem;
+      color: var(--azul);
+      transition: background .2s, border-color .2s;
+    }
+    .opcion.correcta { border-color: var(--verde); background: #e8faf2; pointer-events: none; }
+    .opcion.correcta .letra { background: var(--verde); border-color: var(--verde); color: #fff; }
+    .opcion.incorrecta { border-color: var(--rojo); background: #fdefef; pointer-events: none; }
+    .opcion.incorrecta .letra { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+    .opcion.bloqueada { pointer-events: none; opacity: .55; }
+    .opcion.resaltar  { border-color: var(--verde); background: #e8faf2; }
+    .opcion.resaltar .letra { background: var(--verde); border-color: var(--verde); color: #fff; }
+
+    /* ─── FLASH de feedback rápido ─── */
+    .flash {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: .9rem;
+      font-weight: 600;
+      margin-top: 16px;
+      opacity: 0;
+      transition: opacity .25s;
+    }
+    .flash.show { opacity: 1; }
+    .flash.ok  { background: #e8faf2; color: #1a7a4a; border: 1.5px solid var(--verde); }
+    .flash.mal { background: #fdefef; color: #b02020; border: 1.5px solid var(--rojo); }
+    .flash .icono { font-size: 1.2rem; }
+
+    /* ─── SOPA DE LETRAS ─── */
+    .sopa-palabras {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+    }
+    .palabra-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--gris);
+      font-weight: 700;
+      font-size: .85rem;
+      color: var(--azul);
+      border: 2px solid #c8cdd6;
+      transition: background .2s, text-decoration .2s;
+    }
+    .palabra-chip.encontrada {
+      background: var(--amarillo);
+      border-color: var(--azul);
+      text-decoration: line-through;
+      color: var(--azul3);
+    }
+    .grid-wrap {
+      display: flex; justify-content: center;
+      overflow-x: auto;
+    }
+    .word-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+      background: var(--azul);
+      padding: 6px;
+      border-radius: 10px;
+    }
+    .word-cell {
+      width: 34px; height: 34px;
+      background: var(--blanco);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem;
+      cursor: pointer; border-radius: 6px;
+      user-select: none;
+      transition: background .12s, color .12s;
+    }
+    .word-cell:hover   { background: #eef1f7; }
+    .word-cell.selected{ background: var(--azul); color: var(--blanco); }
+    .word-cell.found   { background: var(--amarillo); color: var(--azul); font-weight: 900; }
+
+    .sopa-instruccion {
+      font-size: .82rem; color: #667; margin-bottom: 14px; line-height: 1.4;
+    }
+
+    /* ─── V/F ─── */
+    .tf-opciones {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;
+    }
+    .tf-btn {
+      padding: 20px 10px;
+      border: 2px solid #dde1e7;
+      border-radius: 12px;
+      background: var(--blanco);
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .18s, background .18s, transform .1s;
+      color: var(--azul);
+    }
+    .tf-btn:hover { border-color: var(--azul); background: #eef1f7; transform: translateY(-2px); }
+    .tf-btn.correcta  { border-color: var(--verde); background: #e8faf2; color: #1a7a4a; pointer-events: none; }
+    .tf-btn.incorrecta{ border-color: var(--rojo);  background: #fdefef; color: #b02020; pointer-events: none; }
+    .tf-btn.bloqueada { pointer-events: none; opacity: .5; }
+
+    /* ─── RESULTADOS ─── */
+    .resultado-hero {
+      background: linear-gradient(135deg, var(--azul) 0%, var(--azul2) 100%);
+      color: var(--blanco);
+      padding: 32px 28px 28px;
+      text-align: center;
+    }
+    .resultado-hero .emoji { font-size: 2.8rem; margin-bottom: 8px; }
+    .resultado-hero h2 { font-size: 1.5rem; font-weight: 800; color: var(--amarillo); }
+    .resultado-hero p  { font-size: .9rem; opacity: .8; margin-top: 6px; }
+
+    .scores { padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .score-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--gris); border-radius: 10px; padding: 12px 16px;
+    }
+    .score-row.total-row {
+      background: var(--amarillo); border: 2px solid var(--azul);
+    }
+    .score-row .label { font-weight: 600; font-size: .9rem; }
+    .score-row .val   { font-size: 1.4rem; font-weight: 800; color: var(--azul); }
+    .score-row.total-row .val { font-size: 1.8rem; }
+
+    .res-footer { padding: 0 24px 28px; display: flex; flex-direction: column; gap: 10px; }
+    .res-footer input {
+      width: 100%; padding: 12px 16px;
+      border: 2px solid #dde1e7; border-radius: 10px;
+      font-size: .95rem; font-family: inherit;
+      transition: border-color .2s;
+    }
+    .res-footer input:focus { outline: none; border-color: var(--azul); }
+
+    /* ─── RANKING ─── */
+    .ranking-header { padding: 22px 24px 10px; text-align: center; }
+    .ranking-header h2 { font-size: 1.15rem; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--azul); color: var(--blanco);
+      padding: 10px 12px; font-size: .8rem; text-align: left;
+    }
+    tbody tr { border-bottom: 1px solid #e5e8ee; }
+    tbody tr:hover { background: #f7f8fa; }
+    tbody tr.rank-1 { background: #fffde7; }
+    tbody td { padding: 11px 12px; font-size: .87rem; }
+    tbody td strong { font-size: 1rem; color: var(--azul); }
+    .ranking-footer { padding: 18px 24px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 500px) {
+      .word-cell { width: 28px; height: 28px; font-size: .75rem; }
+      .tf-opciones { grid-template-columns: 1fr; }
+      .card-body { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 0 — INICIO
+════════════════════════════════════════════════ -->
+<div id="screen-inicio" class="screen active">
+  <div class="splash">
+    <img src="Imagen/logo.png" alt="Logo Paz Electoral" id="logo-img">
+    <h1>Aplicativo Paz Electoral</h1>
+    <p>Demuestra tus conocimientos sobre el empleo del aplicativo y la ética en el manejo de datos.</p>
+    <button class="btn-main" onclick="iniciarJuego()">Iniciar Dinámica</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 1 — QUIZ ABCD
+════════════════════════════════════════════════ -->
+<div id="screen-quiz" class="screen">
+  <div class="card">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="quiz-progress" style="width:0%"></div>
+    </div>
+    <div class="card-header">
+      <div class="tipo">Pregunta <span id="quiz-num">1</span> de 3 — Quiz ABCD</div>
+      <h2 id="quiz-titulo">Cargando…</h2>
+    </div>
+    <div class="card-body">
+      <div class="opciones" id="quiz-opciones"></div>
+      <div class="flash" id="quiz-flash">
+        <span class="icono"></span>
+        <span id="quiz-flash-msg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 2 — SOPA DE LETRAS
+════════════════════════════════════════════════ -->
+<div id="screen-sopa" class="screen">
+  <div class="card">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" style="width:40%"></div>
+    </div>
+    <div class="card-header">
+      <div class="tipo">Actividad 2 de 3 — Sopa de Letras</div>
+      <h2>Encuentra las 3 palabras clave</h2>
+    </div>
+    <div class="card-body">
+      <p class="sopa-instruccion">Toca la primera letra y luego la última de cada palabra (horizontal o vertical). Encuentra las 5 palabras.</p>
+      <div class="sopa-palabras" id="words-list"></div>
+      <div class="grid-wrap">
+        <div class="word-grid" id="word-grid"></div>
+      </div>
+      <div class="flash" id="sopa-flash">
+        <span class="icono"></span>
+        <span id="sopa-flash-msg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 3 — VERDADERO / FALSO
+════════════════════════════════════════════════ -->
+<div id="screen-tf" class="screen">
+  <div class="card">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="tf-progress" style="width:70%"></div>
+    </div>
+    <div class="card-header">
+      <div class="tipo">Pregunta <span id="tf-num">1</span> de 2 — Verdadero / Falso</div>
+      <h2>¿Es esta afirmación verdadera o falsa?</h2>
+    </div>
+    <div class="card-body">
+      <p class="pregunta" id="tf-pregunta"></p>
+      <div class="tf-opciones">
+        <button class="tf-btn" id="tf-btn-v" onclick="responderTF(true)">✅ Verdadero</button>
+        <button class="tf-btn" id="tf-btn-f" onclick="responderTF(false)">❌ Falso</button>
+      </div>
+      <div class="flash" id="tf-flash">
+        <span class="icono"></span>
+        <span id="tf-flash-msg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 4 — RESULTADOS
+════════════════════════════════════════════════ -->
+<div id="screen-resultados" class="screen">
+  <div class="card">
+    <div class="resultado-hero">
+      <div class="emoji">🎉</div>
+      <h2>¡Dinámica completada!</h2>
+      <p>Has finalizado todas las actividades de la dinámica.</p>
+    </div>
+    <div class="scores">
+      <div class="score-row">
+        <span class="label">Quiz ABCD</span>
+        <span class="val"><span id="res-quiz">0</span>/3</span>
+      </div>
+      <div class="score-row">
+        <span class="label">Sopa de Letras</span>
+        <span class="val"><span id="res-sopa">0</span>/5</span>
+      </div>
+      <div class="score-row">
+        <span class="label">Verdadero / Falso</span>
+        <span class="val"><span id="res-tf">0</span>/2</span>
+      </div>
+      <div class="score-row total-row">
+        <span class="label" style="font-size:1rem">PUNTAJE TOTAL</span>
+        <span class="val"><span id="res-total">0</span>/10</span>
+      </div>
+    </div>
+    <div class="res-footer">
+      <input type="text" id="nombre-participante" placeholder="Tu nombre completo">
+      <button class="btn-main" style="width:100%;border-radius:10px" onclick="guardarYVerRanking()">
+        Guardar y ver Ranking
+      </button>
+      <button class="btn-main" style="width:100%;border-radius:10px;background:var(--gris);color:var(--azul)" onclick="volverInicio()">
+        Volver al inicio
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     PANTALLA 5 — RANKING (local)
+════════════════════════════════════════════════ -->
+<div id="screen-ranking" class="screen">
+  <div class="card">
+    <div class="ranking-header">
+      <div style="font-size:1.8rem">🏆</div>
+      <h2>Tabla de Clasificación</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Participante</th>
+          <th>Quiz</th>
+          <th>Sopa</th>
+          <th>V/F</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="ranking-body"></tbody>
+    </table>
+    <div class="ranking-footer">
+      <button class="btn-main" style="width:100%;border-radius:10px" onclick="volverInicio()">
+        Volver al inicio
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════
+let puntajes      = { quiz: 0, sopa: 0, tf: 0 };
+let currentQuiz   = 0;
+let currentTF     = 0;
+let palabrasEncontradas = 0;
+let seleccionInicio = null;
+let gridData      = [];
+let quizActual    = [];   // 3 preguntas sorteadas para esta sesión
+let tfActual      = [];   // 2 preguntas V/F sorteadas
+let tfBloqueado   = false; // ← flag para bloquear V/F a nivel JS
+let rankingLocal  = JSON.parse(localStorage.getItem('ranking_paz') || '[]');
+
+// ═══════════════════════════════════════════════════════════════
+// BANCO DE 10 PREGUNTAS — extraídas de la capacitación real
+// ═══════════════════════════════════════════════════════════════
+const BANCO_QUIZ = [
+  {
+    p: "¿Con qué tecnología está desarrollado el Aplicativo Paz Electoral?",
+    opciones: [
+      "Google Forms",
+      "Microsoft Power Apps",
+      "Tableau",
+      "SAP"
+    ],
+    correcta: 1,
+    explicacion: "El aplicativo fue construido sobre Microsoft Power Apps, dentro del ecosistema de la Procuraduría."
+  },
+  {
+    p: "¿Con qué correo electrónico deben ingresar al aplicativo los funcionarios de personería que participan en la estrategia?",
+    opciones: [
+      "Con su correo personal de Gmail",
+      "Con el correo de su personería municipal",
+      "Con un correo @procuraduria.gov.co creado especialmente para ellos",
+      "Con el correo de la Defensoría del Pueblo"
+    ],
+    correcta: 2,
+    explicacion: "Por licenciamiento, se crea un correo @procuraduria.gov.co para cada funcionario de personería que accede al aplicativo."
+  },
+  {
+    p: "¿Qué dos tipos de permisos solicita el aplicativo al iniciarse por primera vez?",
+    opciones: [
+      "Cámara y micrófono",
+      "Geolocalización y SharePoint",
+      "Contactos y almacenamiento",
+      "Notificaciones y Bluetooth"
+    ],
+    correcta: 1,
+    explicacion: "El aplicativo requiere permiso de geolocalización (para ubicar al funcionario) y de SharePoint (para guardar información en la nube de la Procuraduría)."
+  },
+  {
+    p: "¿Qué debe hacer el funcionario si un ciudadano quiere interponer una queja sin revelar sus datos personales?",
+    opciones: [
+      "No puede registrar la queja sin datos del ciudadano",
+      "Debe solicitar la cédula obligatoriamente",
+      "Registra la queja seleccionando 'quejoso anónimo'",
+      "Escala el caso directamente al delegado de la Registraduría"
+    ],
+    correcta: 2,
+    explicacion: "El aplicativo permite dejar el quejoso como anónimo; no es obligatorio que el ciudadano revele su identidad."
+  },
+  {
+    p: "¿En qué horario estarán habilitados los formularios del aplicativo el día de las elecciones?",
+    opciones: [
+      "De 8:00 a.m. a 4:00 p.m.",
+      "De 7:00 a.m. del día de elecciones hasta las 7:00 a.m. del día siguiente",
+      "De 6:00 a.m. a 10:00 p.m.",
+      "Solo durante el horario de votación oficial"
+    ],
+    correcta: 1,
+    explicacion: "Los formularios estarán disponibles desde las 7:00 a.m. del 8 de marzo hasta las 7:00 a.m. del 9 de marzo, para que quienes no tuvieron señal puedan registrar igualmente."
+  },
+  {
+    p: "¿Qué significa el 'Índice de Normalidad de la Mañana' en el tablero de control?",
+    opciones: [
+      "El porcentaje de funcionarios que llegaron a tiempo",
+      "Un indicador de 0 a 100 que mide si las mesas abrieron correctamente (delegado presente, kit completo, urnas vacías, inicio a las 8:00 a.m.)",
+      "La cantidad de quejas resueltas antes del mediodía",
+      "El porcentaje de cobertura de red móvil en el municipio"
+    ],
+    correcta: 1,
+    explicacion: "El índice mide cuántas mesas iniciaron con normalidad: delegado de Registraduría presente, kit completo y urnas vacías al abrir."
+  },
+  {
+    p: "¿Cuándo debe registrarse el formulario de 'Verificación de Puestos Mañana' según las instrucciones de la capacitación?",
+    opciones: [
+      "Antes de las 7:00 a.m.",
+      "Entre las 8:30 y las 9:30 de la mañana",
+      "Al cierre de la jornada, después de las 4:00 p.m.",
+      "Únicamente si hay irregularidades"
+    ],
+    correcta: 1,
+    explicacion: "El pico de registro es entre las 8:30 y 9:30 a.m.; en ese lapso ya están disponibles todas las respuestas sobre el inicio de la jornada."
+  },
+  {
+    p: "¿Para qué sirve el botón '+' (más) dentro de los formularios del aplicativo?",
+    opciones: [
+      "Para agregar archivos adjuntos a la queja",
+      "Para ampliar el tamaño del texto",
+      "Para cargar un nuevo formulario del mismo tipo (por ejemplo, un segundo jurado inasistente)",
+      "Para compartir el formulario por WhatsApp"
+    ],
+    correcta: 2,
+    explicacion: "El botón '+' carga un formulario en blanco del mismo tipo, permitiendo registrar múltiples casos (como varios jurados inasistentes) sin salir de la sección."
+  },
+  {
+    p: "¿Cuál es el plan de contingencia si el aplicativo principal cae por un ciberataque?",
+    opciones: [
+      "Llamar inmediatamente a la Policía Electoral",
+      "Dejar de registrar información y esperar",
+      "Usar una aplicación web de respaldo accesible mediante un link en la sección 'Preguntas Frecuentes' del aplicativo",
+      "Enviar los datos por correo personal al grupo de analítica"
+    ],
+    correcta: 2,
+    explicacion: "Existe una aplicación de respaldo desarrollada en otra tecnología; el link se activará en 'Preguntas Frecuentes > ¿Cómo ingreso desde el computador?' solo si la dirección lo instruye."
+  },
+  {
+    p: "¿Qué significa que el aplicativo muestre el mensaje de 'enviado exitoso' con un visto bueno?",
+    opciones: [
+      "Que el formulario quedó guardado solo en el celular del funcionario",
+      "Que el dato llegó correctamente a las bases de datos de la Procuraduría",
+      "Que la queja fue resuelta en sitio",
+      "Que el radicado ya fue enviado al ciudadano por correo"
+    ],
+    correcta: 1,
+    explicacion: "El visto bueno de 'enviado exitoso' confirma que la información llegó correctamente a los servidores; sin ese mensaje, el dato no fue recibido."
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// BANCO DE 6 PREGUNTAS V/F — se sortean 2 por sesión
+// ═══════════════════════════════════════════════════════════════
+const BANCO_TF = [
+  {
+    p: "El aplicativo Paz Electoral puede ser usado por cualquier ciudadano con su correo personal.",
+    correcta: false,
+    explicacion: "Falso. Solo funcionarios del Ministerio Público con correo @procuraduria.gov.co pueden acceder."
+  },
+  {
+    p: "La geolocalización del dispositivo permite al tablero verificar si el funcionario se encuentra realmente en el puesto de votación asignado.",
+    correcta: true,
+    explicacion: "Verdadero. La latitud y longitud se capturan al registrar datos y permiten calcular la distancia al puesto de votación."
+  },
+  {
+    p: "Si un ciudadano no tiene cómo escanear el código QR del aplicativo, no puede interponer una queja electoral.",
+    correcta: false,
+    explicacion: "Falso. Puede buscar en su navegador las palabras 'quejas proceso electoral procuraduría' para llegar a la sucursal virtual."
+  },
+  {
+    p: "El formulario de control de inasistencia de jurados debe diligenciarse tanto en la mañana (8:00-9:00 a.m.) como en la tarde (2:00-3:00 p.m.).",
+    correcta: true,
+    explicacion: "Verdadero. La doble verificación detecta si jurados que estuvieron en la mañana se ausentaron en la tarde."
+  },
+  {
+    p: "El archivo adjunto de una queja puede tener un tamaño máximo de 100 megabytes.",
+    correcta: false,
+    explicacion: "Falso. El tamaño máximo permitido por archivo es de 20 megabytes; para videos más pesados se deben usar alternativas como grabar el momento específico."
+  },
+  {
+    p: "El certificado de asistencia de Control Electoral es el único formulario de la estrategia que se lleva en formato físico.",
+    correcta: true,
+    explicacion: "Verdadero. Este documento requiere la firma del delegado de la Registraduría y sirve para que el funcionario reclame su compensación."
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// PALABRAS DE LA SOPA — las 5 fijas, grid generado aleatoriamente
+// ═══════════════════════════════════════════════════════════════
+const PALABRAS_SOPA_BASE = [
+  "CONCIENCIA",
+  "OPORTUNAS",
+  "SEGURAS",
+  "TRANSPARENTES",
+  "LIBRES"
+];
+
+// ═══════════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+
+const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+// ═══════════════════════════════════════════════════════════════
+// GENERADOR DE SOPA ALEATORIA
+// Coloca las palabras (horizontal o vertical) en un grid de 15×15
+// y rellena el resto con letras aleatorias.
+// Las palabras más largas requieren grid 15×15.
+// ═══════════════════════════════════════════════════════════════
+function generarSopa(palabras) {
+  const COLS = 15;
+  const FILAS = 15;
+
+  // Grid vacío
+  const grid = Array.from({ length: FILAS }, () => Array(COLS).fill(''));
+
+  // Intentar colocar cada palabra
+  const colocadas = [];
+  for (const pal of palabras) {
+    let colocada = false;
+    for (let intento = 0; intento < 200 && !colocada; intento++) {
+      const horiz = Math.random() > 0.5;
+      const maxRow = horiz ? FILAS - 1 : FILAS - pal.length;
+      const maxCol = horiz ? COLS - pal.length : COLS - 1;
+      if (maxRow < 0 || maxCol < 0) continue;
+      const row = rnd(maxRow + 1);
+      const col = rnd(maxCol + 1);
+
+      // Verificar espacio
+      let ok = true;
+      for (let k = 0; k < pal.length; k++) {
+        const r = horiz ? row : row + k;
+        const c = horiz ? col + k : col;
+        if (grid[r][c] !== '' && grid[r][c] !== pal[k]) { ok = false; break; }
+      }
+      if (!ok) continue;
+
+      // Colocar
+      for (let k = 0; k < pal.length; k++) {
+        const r = horiz ? row : row + k;
+        const c = horiz ? col + k : col;
+        grid[r][c] = pal[k];
+      }
+      colocadas.push({ palabra: pal, row, col, horiz });
+      colocada = true;
+    }
+    if (!colocada) console.warn('No se pudo colocar:', pal);
+  }
+
+  // Rellenar vacíos con letras aleatorias
+  for (let r = 0; r < FILAS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c] === '') grid[r][c] = LETRAS[rnd(LETRAS.length)];
+
+  return { grid, colocadas, FILAS, COLS };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════════
+function mostrarScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function iniciarJuego() {
+  puntajes = { quiz: 0, sopa: 0, tf: 0 };
+  currentQuiz = 0; currentTF = 0; palabrasEncontradas = 0;
+
+  // Sortear 3 preguntas del banco de 10
+  quizActual = shuffle(BANCO_QUIZ).slice(0, 3);
+
+  // Sortear 2 preguntas V/F del banco de 6
+  tfActual = shuffle(BANCO_TF).slice(0, 2);
+
+  // Actualizar labels de score según palabras seleccionadas
+  document.querySelector('#res-sopa').closest('.score-row').querySelector('.val').innerHTML =
+    `<span id="res-sopa">0</span>/${PALABRAS_SOPA_BASE.length}`;
+
+  mostrarQuiz();
+  mostrarScreen('screen-quiz');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// QUIZ ABCD
+// ═══════════════════════════════════════════════════════════════
+function mostrarQuiz() {
+  const q = quizActual[currentQuiz];
+  document.getElementById('quiz-num').textContent = currentQuiz + 1;
+  document.getElementById('quiz-titulo').textContent = q.p;
+  document.getElementById('quiz-progress').style.width =
+    ((currentQuiz / quizActual.length) * 40) + '%';
+
+  const div = document.getElementById('quiz-opciones');
+  div.innerHTML = '';
+  q.opciones.forEach((op, i) => {
+    const d = document.createElement('div');
+    d.className = 'opcion';
+    d.id = 'opt-' + i;
+    d.innerHTML = `<span class="letra">${String.fromCharCode(65+i)}</span><span>${op}</span>`;
+    d.onclick = () => seleccionarOpcion(i);
+    div.appendChild(d);
+  });
+  ocultarFlash('quiz');
+}
+
+function seleccionarOpcion(idx) {
+  const q = quizActual[currentQuiz];
+  // Bloquear todas inmediatamente (pointer-events por JS además de CSS)
+  document.querySelectorAll('.opcion').forEach(o => {
+    o.classList.add('bloqueada');
+    o.onclick = null;
+  });
+
+  const esCorrecta = (idx === q.correcta);
+  if (esCorrecta) {
+    puntajes.quiz++;
+    document.getElementById('opt-' + idx).classList.add('correcta');
+    mostrarFlash('quiz', true, '¡Correcto! ' + q.explicacion);
+  } else {
+    document.getElementById('opt-' + idx).classList.add('incorrecta');
+    document.getElementById('opt-' + q.correcta).classList.add('resaltar');
+    mostrarFlash('quiz', false, 'Incorrecto. ' + q.explicacion);
+  }
+
+  setTimeout(() => {
+    currentQuiz++;
+    if (currentQuiz < quizActual.length) {
+      mostrarQuiz();
+    } else {
+      iniciarSopa();
+      mostrarScreen('screen-sopa');
+    }
+  }, esCorrecta ? 1400 : 2100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SOPA DE LETRAS ALEATORIA
+// ═══════════════════════════════════════════════════════════════
+let sopaData = null; // { grid, colocadas, FILAS, COLS }
+let palabrasSopa = [];
+
+function iniciarSopa() {
+  // Generar grid aleatorio
+  sopaData = generarSopa(PALABRAS_SOPA_BASE);
+  gridData = sopaData.grid;
+  palabrasSopa = PALABRAS_SOPA_BASE.map(p => ({ palabra: p, encontrada: false }));
+  palabrasEncontradas = 0;
+  seleccionInicio = null;
+
+  // Adaptar grid CSS a 15 columnas
+  const wg = document.getElementById('word-grid');
+  wg.style.gridTemplateColumns = `repeat(${sopaData.COLS}, 1fr)`;
+
+  // Chips de palabras (mostrar con tildes visibles)
+  const displayMap = {
+    CONCIENCIA: 'CONCIENCIA',
+    OPORTUNAS: 'OPORTUNAS',
+    SEGURAS: 'SEGURAS',
+    TRANSPARENTES: 'TRANSPARENTES',
+    LIBRES: 'LIBRES'
+  };
+  const wl = document.getElementById('words-list');
+  wl.innerHTML = '';
+  palabrasSopa.forEach((p, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'palabra-chip';
+    chip.id = 'chip-' + i;
+    chip.textContent = displayMap[p.palabra] || p.palabra;
+    wl.appendChild(chip);
+  });
+
+  // Render grid
+  wg.innerHTML = '';
+  gridData.forEach((row, i) => {
+    row.forEach((letra, j) => {
+      const cell = document.createElement('div');
+      cell.className = 'word-cell';
+      cell.textContent = letra;
+      cell.dataset.row = i; cell.dataset.col = j;
+      cell.onclick = () => seleccionarCelda(i, j);
+      wg.appendChild(cell);
+    });
+  });
+
+  // Ajustar tamaño de celda para 15 cols en pantallas pequeñas
+  wg.style.maxWidth = '100%';
+  ocultarFlash('sopa');
+
+  // Actualizar label de resultado
+  document.getElementById('res-sopa').textContent = '0';
+}
+
+function seleccionarCelda(row, col) {
+  const cell = document.querySelector(`.word-cell[data-row="${row}"][data-col="${col}"]`);
+  if (!cell || cell.classList.contains('found')) return;
+
+  if (!seleccionInicio) {
+    seleccionInicio = { row, col };
+    cell.classList.add('selected');
+  } else {
+    const palabra = verificarPalabra(seleccionInicio, { row, col });
+    document.querySelectorAll('.word-cell.selected').forEach(c => c.classList.remove('selected'));
+
+    if (palabra) {
+      const celdas = obtenerCeldas(seleccionInicio, { row, col });
+      celdas.forEach(c => c.classList.add('found'));
+
+      const idx = palabrasSopa.findIndex(p => p.palabra === palabra && !p.encontrada);
+      if (idx !== -1) {
+        palabrasSopa[idx].encontrada = true;
+        document.getElementById('chip-' + idx).classList.add('encontrada');
+        palabrasEncontradas++;
+        document.getElementById('res-sopa').textContent = palabrasEncontradas;
+      }
+      if (palabrasEncontradas === PALABRAS_SOPA_BASE.length) {
+        puntajes.sopa = PALABRAS_SOPA_BASE.length;
+        mostrarFlash('sopa', true, '¡Excelente! Encontraste todas las palabras.');
+        setTimeout(() => {
+          mostrarTF();
+          mostrarScreen('screen-tf');
+        }, 1600);
+      }
+    }
+    seleccionInicio = null;
+  }
+}
+
+function verificarPalabra(a, b) {
+  let palabra = '';
+  if (a.row === b.row) {
+    const min = Math.min(a.col, b.col), max = Math.max(a.col, b.col);
+    for (let c = min; c <= max; c++) palabra += gridData[a.row][c];
+  } else if (a.col === b.col) {
+    const min = Math.min(a.row, b.row), max = Math.max(a.row, b.row);
+    for (let r = min; r <= max; r++) palabra += gridData[r][a.col];
+  } else return null;
+  return palabrasSopa.some(p => p.palabra === palabra) ? palabra : null;
+}
+
+function obtenerCeldas(a, b) {
+  const celdas = [];
+  if (a.row === b.row) {
+    const min = Math.min(a.col, b.col), max = Math.max(a.col, b.col);
+    for (let c = min; c <= max; c++)
+      celdas.push(document.querySelector(`.word-cell[data-row="${a.row}"][data-col="${c}"]`));
+  } else if (a.col === b.col) {
+    const min = Math.min(a.row, b.row), max = Math.max(a.row, b.row);
+    for (let r = min; r <= max; r++)
+      celdas.push(document.querySelector(`.word-cell[data-row="${r}"][data-col="${a.col}"]`));
+  }
+  return celdas;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERDADERO / FALSO — bug fix: bloqueo real con flag JS
+// ═══════════════════════════════════════════════════════════════
+function mostrarTF() {
+  tfBloqueado = false; // ← desbloquear al mostrar nueva pregunta
+  const q = tfActual[currentTF];
+  document.getElementById('tf-num').textContent = currentTF + 1;
+  document.getElementById('tf-pregunta').textContent = q.p;
+  document.getElementById('tf-progress').style.width = (70 + (currentTF * 15)) + '%';
+
+  // Restablecer clases (sin onclick inline; los botones llaman responderTF())
+  const btnV = document.getElementById('tf-btn-v');
+  const btnF = document.getElementById('tf-btn-f');
+  btnV.className = 'tf-btn';
+  btnF.className = 'tf-btn';
+  ocultarFlash('tf');
+}
+
+function responderTF(respuesta) {
+  if (tfBloqueado) return; // ← GUARD: ignorar clics duplicados
+  tfBloqueado = true;      // ← bloquear inmediatamente
+
+  const q = tfActual[currentTF];
+  const btnV = document.getElementById('tf-btn-v');
+  const btnF = document.getElementById('tf-btn-f');
+  const esCorrecta = (respuesta === q.correcta);
+
+  // Marcar botones visualmente
+  btnV.classList.add('bloqueada');
+  btnF.classList.add('bloqueada');
+
+  if (esCorrecta) {
+    puntajes.tf++;
+    (respuesta ? btnV : btnF).classList.add('correcta');
+    mostrarFlash('tf', true,
+      (respuesta ? '¡Correcto! Es verdadero. ' : '¡Correcto! Es falso. ') + q.explicacion);
+  } else {
+    (respuesta ? btnV : btnF).classList.add('incorrecta');
+    (q.correcta ? btnV : btnF).classList.add('correcta');
+    mostrarFlash('tf', false,
+      (q.correcta ? 'Incorrecto. Era Verdadero. ' : 'Incorrecto. Era Falso. ') + q.explicacion);
+  }
+
+  setTimeout(() => {
+    currentTF++;
+    if (currentTF < tfActual.length) {
+      mostrarTF();
+    } else {
+      mostrarResultados();
+      mostrarScreen('screen-resultados');
+    }
+  }, esCorrecta ? 1400 : 2100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESULTADOS
+// ═══════════════════════════════════════════════════════════════
+function mostrarResultados() {
+  const total = puntajes.quiz + puntajes.sopa + puntajes.tf;
+  const maxTotal = 3 + PALABRAS_SOPA_BASE.length + 2;
+  document.getElementById('res-quiz').textContent  = puntajes.quiz;
+  document.getElementById('res-sopa').textContent  = puntajes.sopa;
+  document.getElementById('res-tf').textContent    = puntajes.tf;
+  document.getElementById('res-total').textContent = total;
+  // Actualizar "/X" dinámico en score total
+  document.querySelector('.total-row .val').innerHTML =
+    `<span id="res-total">${total}</span>/${maxTotal}`;
+}
+
+function guardarYVerRanking() {
+  const nombre = document.getElementById('nombre-participante').value.trim();
+  if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+  const maxTotal = 3 + PALABRAS_SOPA_BASE.length + 2;
+  rankingLocal.push({
+    nombre,
+    quiz:  puntajes.quiz,
+    sopa:  puntajes.sopa,
+    tf:    puntajes.tf,
+    total: puntajes.quiz + puntajes.sopa + puntajes.tf,
+    max:   maxTotal,
+    fecha: new Date().toLocaleDateString('es-CO')
+  });
+  rankingLocal.sort((a, b) => b.total - a.total);
+  localStorage.setItem('ranking_paz', JSON.stringify(rankingLocal));
+  renderRanking();
+  mostrarScreen('screen-ranking');
+}
+
+function renderRanking() {
+  const tbody = document.getElementById('ranking-body');
+  tbody.innerHTML = '';
+  if (!rankingLocal.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px">Sin participantes aún</td></tr>';
+    return;
+  }
+  rankingLocal.slice(0, 10).forEach((d, i) => {
+    const tr = document.createElement('tr');
+    if (i === 0) tr.className = 'rank-1';
+    tr.innerHTML = `
+      <td><strong>${i+1}${i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':''}</strong></td>
+      <td>${d.nombre}</td>
+      <td>${d.quiz}</td>
+      <td>${d.sopa}</td>
+      <td>${d.tf}</td>
+      <td><strong>${d.total}</strong></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function volverInicio() { mostrarScreen('screen-inicio'); }
+
+// ═══════════════════════════════════════════════════════════════
+// FLASH
+// ═══════════════════════════════════════════════════════════════
+function mostrarFlash(tipo, ok, msg) {
+  const el = document.getElementById(tipo + '-flash');
+  el.querySelector('.icono').textContent = ok ? '✅' : '❌';
+  document.getElementById(tipo + '-flash-msg').textContent = msg;
+  el.className = 'flash show ' + (ok ? 'ok' : 'mal');
+}
+function ocultarFlash(tipo) {
+  document.getElementById(tipo + '-flash').className = 'flash';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGO
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const img = document.getElementById('logo-img');
+  img.onerror = function() { this.onerror = null; this.src = 'LOGO_PAZ_ELECTORAL.png'; };
+  img.src = 'Imagen/logo.png';
+})();
+
+// Ajustar word-cell para 15 columnas en CSS
+document.head.insertAdjacentHTML('beforeend', `
+<style>
+  #word-grid { grid-template-columns: repeat(15, 1fr) !important; }
+  .word-cell { width: 28px; height: 28px; font-size: .72rem; }
+  @media (max-width: 500px) {
+    .word-cell { width: 20px; height: 20px; font-size: .6rem; }
+  }
+</style>`);
+</script>
+</body>
+</html>

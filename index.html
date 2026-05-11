@@ -164,55 +164,6 @@
     .flash.mal { background: #fdefef; color: #b02020; border: 1.5px solid var(--rojo); }
     .flash .icono { font-size: 1.2rem; }
 
-    /* ─── SOPA DE LETRAS ─── */
-    .sopa-palabras {
-      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
-    }
-    .palabra-chip {
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: var(--gris);
-      font-weight: 700;
-      font-size: .85rem;
-      color: var(--azul);
-      border: 2px solid #c8cdd6;
-      transition: background .2s, text-decoration .2s;
-    }
-    .palabra-chip.encontrada {
-      background: var(--amarillo);
-      border-color: var(--azul);
-      text-decoration: line-through;
-      color: var(--azul3);
-    }
-    .grid-wrap {
-      display: flex; justify-content: center;
-      overflow-x: auto;
-    }
-    .word-grid {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 3px;
-      background: var(--azul);
-      padding: 6px;
-      border-radius: 10px;
-    }
-    .word-cell {
-      width: 34px; height: 34px;
-      background: var(--blanco);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: .85rem;
-      cursor: pointer; border-radius: 6px;
-      user-select: none;
-      transition: background .12s, color .12s;
-    }
-    .word-cell:hover   { background: #eef1f7; }
-    .word-cell.selected{ background: var(--azul); color: var(--blanco); }
-    .word-cell.found   { background: var(--amarillo); color: var(--azul); font-weight: 900; }
-
-    .sopa-instruccion {
-      font-size: .82rem; color: #667; margin-bottom: 14px; line-height: 1.4;
-    }
-
     /* ─── V/F ─── */
     .tf-opciones {
       display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;
@@ -282,7 +233,6 @@
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 500px) {
-      .word-cell { width: 28px; height: 28px; font-size: .75rem; }
       .tf-opciones { grid-template-columns: 1fr; }
       .card-body { padding: 20px 16px; }
     }
@@ -319,32 +269,6 @@
       <div class="flash" id="quiz-flash">
         <span class="icono"></span>
         <span id="quiz-flash-msg"></span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════
-     PANTALLA 2 — SOPA DE LETRAS
-════════════════════════════════════════════════ -->
-<div id="screen-sopa" class="screen">
-  <div class="card">
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" style="width:40%"></div>
-    </div>
-    <div class="card-header">
-      <div class="tipo">Actividad 2 de 3 — Sopa de Letras</div>
-      <h2>Encuentra las 5 palabras clave de la escalera de la democracia</h2>
-    </div>
-    <div class="card-body">
-      <p class="sopa-instruccion">Toca la primera letra y luego la última de cada palabra (horizontal o vertical). Encuentra las 5 palabras.</p>
-      <div class="sopa-palabras" id="words-list"></div>
-      <div class="grid-wrap">
-        <div class="word-grid" id="word-grid"></div>
-      </div>
-      <div class="flash" id="sopa-flash">
-        <span class="icono"></span>
-        <span id="sopa-flash-msg"></span>
       </div>
     </div>
   </div>
@@ -392,20 +316,16 @@
         <span class="val"><span id="res-quiz">0</span>/3</span>
       </div>
       <div class="score-row">
-        <span class="label">Sopa de Letras</span>
-        <span class="val"><span id="res-sopa">0</span>/5</span>
-      </div>
-      <div class="score-row">
         <span class="label">Verdadero / Falso</span>
         <span class="val"><span id="res-tf">0</span>/2</span>
       </div>
       <div class="score-row total-row">
         <span class="label" style="font-size:1rem">PUNTAJE TOTAL</span>
-        <span class="val"><span id="res-total">0</span>/10</span>
+        <span class="val"><span id="res-total">0</span>/5</span>
       </div>
     </div>
     <div class="res-footer">
-      <input type="text" id="nombre-participante" placeholder="Tu nombre completo">
+      <input type="text" id="nombre-participante" placeholder="Tu nombre completo (ej: Pedro Pérez)">
       <button class="btn-main" style="width:100%;border-radius:10px" onclick="guardarYVerRanking()">
         Guardar y ver Ranking
       </button>
@@ -431,7 +351,6 @@
           <th>#</th>
           <th>Participante</th>
           <th>Quiz</th>
-          <th>Sopa</th>
           <th>V/F</th>
           <th>Total</th>
         </tr>
@@ -450,16 +369,16 @@
 // ═══════════════════════════════════════════════════════════════
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════════════════════════
-let puntajes      = { quiz: 0, sopa: 0, tf: 0 };
+let puntajes      = { quiz: 0, tf: 0 };
 let currentQuiz   = 0;
 let currentTF     = 0;
-let palabrasEncontradas = 0;
-let seleccionInicio = null;
-let gridData      = [];
-let quizActual    = [];   // 3 preguntas sorteadas para esta sesión
-let tfActual      = [];   // 2 preguntas V/F sorteadas
-let tfBloqueado   = false; // ← flag para bloquear V/F a nivel JS
+let quizActual    = [];
+let tfActual      = [];
+let tfBloqueado   = false;
 let rankingLocal  = JSON.parse(localStorage.getItem('ranking_paz') || '[]');
+
+// ─── REEMPLAZA ESTA URL con la de tu Web App desplegada en Apps Script ───
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzNB6AYnAVcuwwk8G7AuMXf6libY_6tkfuzji1KUHamijm5UmoBShISD4tUUexFar5a/exec';
 
 // ═══════════════════════════════════════════════════════════════
 // BANCO DE 10 PREGUNTAS — extraídas de la capacitación real
@@ -614,17 +533,6 @@ const BANCO_TF = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// PALABRAS DE LA SOPA — las 5 fijas, grid generado aleatoriamente
-// ═══════════════════════════════════════════════════════════════
-const PALABRAS_SOPA_BASE = [
-  "CONCIENCIA",
-  "OPORTUNAS",
-  "SEGURAS",
-  "TRANSPARENTES",
-  "LIBRES"
-];
-
-// ═══════════════════════════════════════════════════════════════
 // UTILIDADES
 // ═══════════════════════════════════════════════════════════════
 function shuffle(arr) {
@@ -641,60 +549,6 @@ function rnd(n) { return Math.floor(Math.random() * n); }
 const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // ═══════════════════════════════════════════════════════════════
-// GENERADOR DE SOPA ALEATORIA
-// Coloca las palabras (horizontal o vertical) en un grid de 15×15
-// y rellena el resto con letras aleatorias.
-// Las palabras más largas requieren grid 15×15.
-// ═══════════════════════════════════════════════════════════════
-function generarSopa(palabras) {
-  const COLS = 15;
-  const FILAS = 15;
-
-  // Grid vacío
-  const grid = Array.from({ length: FILAS }, () => Array(COLS).fill(''));
-
-  // Intentar colocar cada palabra
-  const colocadas = [];
-  for (const pal of palabras) {
-    let colocada = false;
-    for (let intento = 0; intento < 200 && !colocada; intento++) {
-      const horiz = Math.random() > 0.5;
-      const maxRow = horiz ? FILAS - 1 : FILAS - pal.length;
-      const maxCol = horiz ? COLS - pal.length : COLS - 1;
-      if (maxRow < 0 || maxCol < 0) continue;
-      const row = rnd(maxRow + 1);
-      const col = rnd(maxCol + 1);
-
-      // Verificar espacio
-      let ok = true;
-      for (let k = 0; k < pal.length; k++) {
-        const r = horiz ? row : row + k;
-        const c = horiz ? col + k : col;
-        if (grid[r][c] !== '' && grid[r][c] !== pal[k]) { ok = false; break; }
-      }
-      if (!ok) continue;
-
-      // Colocar
-      for (let k = 0; k < pal.length; k++) {
-        const r = horiz ? row : row + k;
-        const c = horiz ? col + k : col;
-        grid[r][c] = pal[k];
-      }
-      colocadas.push({ palabra: pal, row, col, horiz });
-      colocada = true;
-    }
-    if (!colocada) console.warn('No se pudo colocar:', pal);
-  }
-
-  // Rellenar vacíos con letras aleatorias
-  for (let r = 0; r < FILAS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (grid[r][c] === '') grid[r][c] = LETRAS[rnd(LETRAS.length)];
-
-  return { grid, colocadas, FILAS, COLS };
-}
-
-// ═══════════════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════════════
 function mostrarScreen(id) {
@@ -704,18 +558,14 @@ function mostrarScreen(id) {
 }
 
 function iniciarJuego() {
-  puntajes = { quiz: 0, sopa: 0, tf: 0 };
-  currentQuiz = 0; currentTF = 0; palabrasEncontradas = 0;
+  puntajes = { quiz: 0, tf: 0 };
+  currentQuiz = 0; currentTF = 0;
 
   // Sortear 3 preguntas del banco de 10
   quizActual = shuffle(BANCO_QUIZ).slice(0, 3);
 
   // Sortear 2 preguntas V/F del banco de 6
   tfActual = shuffle(BANCO_TF).slice(0, 2);
-
-  // Actualizar labels de score según palabras seleccionadas
-  document.querySelector('#res-sopa').closest('.score-row').querySelector('.val').innerHTML =
-    `<span id="res-sopa">0</span>/${PALABRAS_SOPA_BASE.length}`;
 
   mostrarQuiz();
   mostrarScreen('screen-quiz');
@@ -768,128 +618,10 @@ function seleccionarOpcion(idx) {
     if (currentQuiz < quizActual.length) {
       mostrarQuiz();
     } else {
-      iniciarSopa();
-      mostrarScreen('screen-sopa');
+      mostrarTF();
+      mostrarScreen('screen-tf');
     }
   }, esCorrecta ? 1400 : 2100);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SOPA DE LETRAS ALEATORIA
-// ═══════════════════════════════════════════════════════════════
-let sopaData = null; // { grid, colocadas, FILAS, COLS }
-let palabrasSopa = [];
-
-function iniciarSopa() {
-  // Generar grid aleatorio
-  sopaData = generarSopa(PALABRAS_SOPA_BASE);
-  gridData = sopaData.grid;
-  palabrasSopa = PALABRAS_SOPA_BASE.map(p => ({ palabra: p, encontrada: false }));
-  palabrasEncontradas = 0;
-  seleccionInicio = null;
-
-  // Adaptar grid CSS a 15 columnas
-  const wg = document.getElementById('word-grid');
-  wg.style.gridTemplateColumns = `repeat(${sopaData.COLS}, 1fr)`;
-
-  // Chips de palabras (mostrar con tildes visibles)
-  const displayMap = {
-    CONCIENCIA: 'CONCIENCIA',
-    OPORTUNAS: 'OPORTUNAS',
-    SEGURAS: 'SEGURAS',
-    TRANSPARENTES: 'TRANSPARENTES',
-    LIBRES: 'LIBRES'
-  };
-  const wl = document.getElementById('words-list');
-  wl.innerHTML = '';
-  palabrasSopa.forEach((p, i) => {
-    const chip = document.createElement('div');
-    chip.className = 'palabra-chip';
-    chip.id = 'chip-' + i;
-    chip.textContent = displayMap[p.palabra] || p.palabra;
-    wl.appendChild(chip);
-  });
-
-  // Render grid
-  wg.innerHTML = '';
-  gridData.forEach((row, i) => {
-    row.forEach((letra, j) => {
-      const cell = document.createElement('div');
-      cell.className = 'word-cell';
-      cell.textContent = letra;
-      cell.dataset.row = i; cell.dataset.col = j;
-      cell.onclick = () => seleccionarCelda(i, j);
-      wg.appendChild(cell);
-    });
-  });
-
-  // Ajustar tamaño de celda para 15 cols en pantallas pequeñas
-  wg.style.maxWidth = '100%';
-  ocultarFlash('sopa');
-
-  // Actualizar label de resultado
-  document.getElementById('res-sopa').textContent = '0';
-}
-
-function seleccionarCelda(row, col) {
-  const cell = document.querySelector(`.word-cell[data-row="${row}"][data-col="${col}"]`);
-  if (!cell || cell.classList.contains('found')) return;
-
-  if (!seleccionInicio) {
-    seleccionInicio = { row, col };
-    cell.classList.add('selected');
-  } else {
-    const palabra = verificarPalabra(seleccionInicio, { row, col });
-    document.querySelectorAll('.word-cell.selected').forEach(c => c.classList.remove('selected'));
-
-    if (palabra) {
-      const celdas = obtenerCeldas(seleccionInicio, { row, col });
-      celdas.forEach(c => c.classList.add('found'));
-
-      const idx = palabrasSopa.findIndex(p => p.palabra === palabra && !p.encontrada);
-      if (idx !== -1) {
-        palabrasSopa[idx].encontrada = true;
-        document.getElementById('chip-' + idx).classList.add('encontrada');
-        palabrasEncontradas++;
-        document.getElementById('res-sopa').textContent = palabrasEncontradas;
-      }
-      if (palabrasEncontradas === PALABRAS_SOPA_BASE.length) {
-        puntajes.sopa = PALABRAS_SOPA_BASE.length;
-        mostrarFlash('sopa', true, '¡Excelente! Encontraste todas las palabras.');
-        setTimeout(() => {
-          mostrarTF();
-          mostrarScreen('screen-tf');
-        }, 1600);
-      }
-    }
-    seleccionInicio = null;
-  }
-}
-
-function verificarPalabra(a, b) {
-  let palabra = '';
-  if (a.row === b.row) {
-    const min = Math.min(a.col, b.col), max = Math.max(a.col, b.col);
-    for (let c = min; c <= max; c++) palabra += gridData[a.row][c];
-  } else if (a.col === b.col) {
-    const min = Math.min(a.row, b.row), max = Math.max(a.row, b.row);
-    for (let r = min; r <= max; r++) palabra += gridData[r][a.col];
-  } else return null;
-  return palabrasSopa.some(p => p.palabra === palabra) ? palabra : null;
-}
-
-function obtenerCeldas(a, b) {
-  const celdas = [];
-  if (a.row === b.row) {
-    const min = Math.min(a.col, b.col), max = Math.max(a.col, b.col);
-    for (let c = min; c <= max; c++)
-      celdas.push(document.querySelector(`.word-cell[data-row="${a.row}"][data-col="${c}"]`));
-  } else if (a.col === b.col) {
-    const min = Math.min(a.row, b.row), max = Math.max(a.row, b.row);
-    for (let r = min; r <= max; r++)
-      celdas.push(document.querySelector(`.word-cell[data-row="${r}"][data-col="${a.col}"]`));
-  }
-  return celdas;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -900,7 +632,7 @@ function mostrarTF() {
   const q = tfActual[currentTF];
   document.getElementById('tf-num').textContent = currentTF + 1;
   document.getElementById('tf-pregunta').textContent = q.p;
-  document.getElementById('tf-progress').style.width = (70 + (currentTF * 15)) + '%';
+  document.getElementById('tf-progress').style.width = (60 + (currentTF * 20)) + '%';
 
   // Restablecer clases (sin onclick inline; los botones llaman responderTF())
   const btnV = document.getElementById('tf-btn-v');
@@ -950,10 +682,9 @@ function responderTF(respuesta) {
 // RESULTADOS
 // ═══════════════════════════════════════════════════════════════
 function mostrarResultados() {
-  const total = puntajes.quiz + puntajes.sopa + puntajes.tf;
-  const maxTotal = 3 + PALABRAS_SOPA_BASE.length + 2;
+  const total = puntajes.quiz + puntajes.tf;
+  const maxTotal = 5;
   document.getElementById('res-quiz').textContent  = puntajes.quiz;
-  document.getElementById('res-sopa').textContent  = puntajes.sopa;
   document.getElementById('res-tf').textContent    = puntajes.tf;
   document.getElementById('res-total').textContent = total;
   // Actualizar "/X" dinámico en score total
@@ -963,38 +694,64 @@ function mostrarResultados() {
 
 function guardarYVerRanking() {
   const nombre = document.getElementById('nombre-participante').value.trim();
-  if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
-  const maxTotal = 3 + PALABRAS_SOPA_BASE.length + 2;
-  rankingLocal.push({
+  if (!nombre) { alert('Por favor ingresa tu nombre completo'); return; }
+
+  const ahora   = new Date();
+  const fecha   = ahora.toLocaleDateString('es-CO');
+  const hora    = ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const maxTotal = 5;
+
+  const registro = {
     nombre,
-    quiz:  puntajes.quiz,
-    sopa:  puntajes.sopa,
-    tf:    puntajes.tf,
-    total: puntajes.quiz + puntajes.sopa + puntajes.tf,
-    max:   maxTotal,
-    fecha: new Date().toLocaleDateString('es-CO')
-  });
+    quiz:      puntajes.quiz,
+    tf:        puntajes.tf,
+    total:     puntajes.quiz + puntajes.tf,
+    max:       maxTotal,
+    fecha,
+    hora,
+    userAgent: navigator.userAgent
+  };
+
+  // Guardar localmente (para mostrar ranking en pantalla)
+  rankingLocal.push(registro);
   rankingLocal.sort((a, b) => b.total - a.total);
   localStorage.setItem('ranking_paz', JSON.stringify(rankingLocal));
+
+  // Enviar a Google Sheets en segundo plano
+  enviarASheets(registro);
+
   renderRanking();
   mostrarScreen('screen-ranking');
+}
+
+function enviarASheets(datos) {
+  // Si no se configuró la URL, salir silenciosamente
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_WEB_APP') return;
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode:   'no-cors',   // Apps Script no devuelve CORS headers en POST; no-cors evita el error
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos)
+  }).catch(() => {
+    // Fallo silencioso: el dato ya quedó en localStorage como respaldo
+  });
 }
 
 function renderRanking() {
   const tbody = document.getElementById('ranking-body');
   tbody.innerHTML = '';
   if (!rankingLocal.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px">Sin participantes aún</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#888">Esperando participantes…</td></tr>';
     return;
   }
-  rankingLocal.slice(0, 10).forEach((d, i) => {
+  rankingLocal.slice(0, 50).forEach((d, i) => {
     const tr = document.createElement('tr');
     if (i === 0) tr.className = 'rank-1';
     tr.innerHTML = `
       <td><strong>${i+1}${i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':''}</strong></td>
       <td>${d.nombre}</td>
       <td>${d.quiz}</td>
-      <td>${d.sopa}</td>
       <td>${d.tf}</td>
       <td><strong>${d.total}</strong></td>
     `;
@@ -1026,15 +783,7 @@ function ocultarFlash(tipo) {
   img.src = 'Imagen/logo.png';
 })();
 
-// Ajustar word-cell para 15 columnas en CSS
-document.head.insertAdjacentHTML('beforeend', `
-<style>
-  #word-grid { grid-template-columns: repeat(15, 1fr) !important; }
-  .word-cell { width: 28px; height: 28px; font-size: .72rem; }
-  @media (max-width: 500px) {
-    .word-cell { width: 20px; height: 20px; font-size: .6rem; }
-  }
-</style>`);
+
 </script>
 </body>
 </html>

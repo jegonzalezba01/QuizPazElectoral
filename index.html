@@ -725,17 +725,15 @@ function guardarYVerRanking() {
 }
 
 function enviarASheets(datos) {
-  // Si no se configuró la URL, salir silenciosamente
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_WEB_APP') return;
+
+  const params = new URLSearchParams();
+  params.append('data', JSON.stringify(datos));
 
   fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    mode:   'no-cors',   // Apps Script no devuelve CORS headers en POST; no-cors evita el error
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(datos)
-  }).catch(() => {
-    // Fallo silencioso: el dato ya quedó en localStorage como respaldo
-  });
+    body: params
+  }).catch(() => {});
 }
 
 function renderRanking() {
